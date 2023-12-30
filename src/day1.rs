@@ -36,8 +36,13 @@ pub fn part1(input: &str) -> i32 {
 #[aoc(day1, part2)]
 #[must_use]
 pub fn part2(input: &str) -> usize {
-    //We will keep a running window of five letters and as that matches the longest of the spelled words.
-    //We will also look for the first index of a number and see which comes first
+    //For each line
+    // For the first number look at each character, if that character is a assign that digit to first_num.
+    //  Otherwise, look at that character through the end of the line and see if it starts with one of our words.
+
+    //Do the same but starting from the end of the line and working backwards.
+    // If the character is a digit, assign that digit to second_num.
+    //  Otherwise, look at that character through to the end of the line and see if it starts with one our our words.
     input
         .lines()
         .map(|line| {
