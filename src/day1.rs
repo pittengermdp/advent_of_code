@@ -4,7 +4,7 @@ pub const NUMBER_WORDS: [&str; 9] = [
 
 #[aoc(day1, part1)]
 #[must_use]
-pub fn part1(input: &str) -> i32 {
+pub fn part1(input: &str) -> u32 {
     //For each line
     //  we need to get the first numeric and the last numeric and concatenate them
     //  in order to make a single u32.
@@ -28,14 +28,12 @@ pub fn part1(input: &str) -> i32 {
             .unwrap_or_default();
             first_num + last_num
         })
-        .sum::<u32>()
-        .try_into()
-        .unwrap_or_default()
+        .sum()
 }
 
 #[aoc(day1, part2)]
 #[must_use]
-pub fn part2(input: &str) -> usize {
+pub fn part2(input: &str) -> u32 {
     //For each line
     // For the first number look at each character, if that character is a assign that digit to first_num.
     //  Otherwise, look at that character through the end of the line and see if it starts with one of our words.
@@ -52,16 +50,14 @@ pub fn part2(input: &str) -> usize {
             for (line_idx, c) in line.chars().enumerate() {
                 first_num = char::to_digit(c, 10).map_or_else(
                     || {
-                        let mut j = 0;
-                        for word in &NUMBER_WORDS {
+                        for (word_idx, word) in NUMBER_WORDS.iter().enumerate() {
                             if line[line_idx..].starts_with(word) {
-                                return Some(j + 1);
+                                return Some(word_idx as u32 + 1);
                             }
-                            j += 1;
                         }
                         None
                     },
-                    |num| Some(num as usize),
+                    Some,
                 );
 
                 if first_num.is_some() {
@@ -71,17 +67,14 @@ pub fn part2(input: &str) -> usize {
             for (line_idx, c) in line.chars().rev().enumerate() {
                 second_num = char::to_digit(c, 10).map_or_else(
                     || {
-                        let mut j = 0;
-                        for word in &NUMBER_WORDS {
+                        for (word_idx, word) in NUMBER_WORDS.iter().enumerate() {
                             if line[line.len() - line_idx - 1..].starts_with(word) {
-                                return Some(j + 1);
-                            } else {
-                                j += 1;
-                            };
+                                return Some(word_idx as u32 + 1);
+                            }
                         }
                         None
                     },
-                    |num| Some(num as usize),
+                    Some,
                 );
                 if second_num.is_some() {
                     break;
@@ -89,7 +82,7 @@ pub fn part2(input: &str) -> usize {
             }
             first_num.unwrap_or_default() * 10 + second_num.unwrap_or_default()
         })
-        .sum::<usize>()
+        .sum()
 }
 
 #[cfg(test)]
