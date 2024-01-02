@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use anyhow::Result;
 use nom::{
     character::complete::digit1,
@@ -12,14 +14,28 @@ use nom::{
         sequence::{delimited, tuple},
     },
 };
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct Rgb {
     pub red: u32,
     pub green: u32,
     pub blue: u32,
 }
 
-#[derive(Debug, PartialEq)]
+impl PartialOrd for Rgb {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.red <= other.red && self.green <= other.green && self.blue <= other.blue {
+            if self.red == other.red && self.green == other.green && self.blue == other.blue {
+                Some(Ordering::Equal)
+            } else {
+                Some(Ordering::Less)
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Game {
     id: u32,
     rounds: Vec<Rgb>,
@@ -101,16 +117,26 @@ fn games_parser(input: &str) -> Result<Vec<Game>> {
         |(_, id, _, rounds)| Game { id, rounds },
     );
 
-    Ok(separated_list0(newline_parser, game_parser)(input)?.1)
+    match separated_list0(newline_parser, game_parser)(input) {
+        Ok((_, games)) => Ok(games),
+        Err(e) => Err(anyhow::anyhow!(e.to_string())),
+    }
+}
+
+#[aoc_generator(day2)]
+fn input_generator(input: &str) -> Vec<Game> {
+    match games_parser(input) {
+        Ok(games) => games,
+        Err(e) => panic!("{}", e.to_string()),
+    }
 }
 
 #[aoc(day2, part1)]
 #[must_use]
-pub fn part1(input: &str) -> u32 {
-    let input = games_parser(input).unwrap();
+pub fn part1(input: &[Game]) -> u32 {
     let max_cubes = Rgb {
         red: 12,
-        green: 12,
+        green: 13,
         blue: 14,
     };
     input
@@ -122,8 +148,25 @@ pub fn part1(input: &str) -> u32 {
 
 #[aoc(day2, part2)]
 #[must_use]
-pub fn part2(_input: &str) -> u64 {
-    todo!()
+pub fn part2(input: &[Game]) -> u64 {
+    input
+        .iter()
+        .map(|game| {
+            game.rounds.iter().fold(
+                (u32::MIN, u32::MIN, u32::MIN),
+                |(max_red, max_green, max_blue), rgb| {
+                    (
+                        max_red.max(rgb.red),
+                        max_green.max(rgb.green),
+                        max_blue.max(rgb.blue),
+                    )
+                },
+            )
+        })
+        .map(|(max_red, max_green, max_blue)| {
+            u64::from(max_red) * u64::from(max_green) * u64::from(max_blue)
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -283,6 +326,120 @@ mod tests {
             },
         ];
 
-        assert_eq!(games_parser(&input).unwrap(), expected);
+        assert_eq!(games_parser(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_part1() {
+        let input = vec![
+            Game {
+                id: 1,
+                rounds: vec![
+                    Rgb {
+                        red: 4,
+                        green: 0,
+                        blue: 3,
+                    },
+                    Rgb {
+                        red: 1,
+                        green: 2,
+                        blue: 6,
+                    },
+                    Rgb {
+                        red: 0,
+                        green: 2,
+                        blue: 0,
+                    },
+                ],
+            },
+            Game {
+                id: 2,
+                rounds: vec![
+                    Rgb {
+                        red: 0,
+                        green: 2,
+                        blue: 1,
+                    },
+                    Rgb {
+                        red: 1,
+                        green: 3,
+                        blue: 4,
+                    },
+                    Rgb {
+                        red: 0,
+                        green: 1,
+                        blue: 1,
+                    },
+                ],
+            },
+            Game {
+                id: 3,
+                rounds: vec![
+                    Rgb {
+                        red: 20,
+                        green: 8,
+                        blue: 6,
+                    },
+                    Rgb {
+                        red: 4,
+                        green: 13,
+                        blue: 5,
+                    },
+                    Rgb {
+                        red: 1,
+                        green: 5,
+                        blue: 0,
+                    },
+                ],
+            },
+            Game {
+                id: 4,
+                rounds: vec![
+                    Rgb {
+                        red: 3,
+                        green: 1,
+                        blue: 6,
+                    },
+                    Rgb {
+                        red: 6,
+                        green: 3,
+                        blue: 0,
+                    },
+                    Rgb {
+                        red: 14,
+                        green: 3,
+                        blue: 15,
+                    },
+                ],
+            },
+            Game {
+                id: 5,
+                rounds: vec![
+                    Rgb {
+                        red: 6,
+                        green: 3,
+                        blue: 1,
+                    },
+                    Rgb {
+                        red: 1,
+                        green: 2,
+                        blue: 2,
+                    },
+                ],
+            },
+        ];
+
+        let result = part1(input.as_slice());
+
+        assert_eq!(result, 8);
+    }
+
+    #[test]
+    fn part_2_test() -> Result<()> {
+        let input = std::fs::read_to_string("./input/2023/day2.txt")?;
+        let games = games_parser(&input)?;
+        let result = part2(&games);
+        assert_eq!(result, 62_241);
+        Ok(())
     }
 }
